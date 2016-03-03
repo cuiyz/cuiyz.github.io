@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>企业级容器管理平台－DDC（Docker DataCenter）的快速安装与初探</title>
+</head>
+<body>
+<h2>企业级容器管理平台－DDC（Docker DataCenter）的快速安装与初探</h2>
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+2016年2月下旬，Docker发布了企业级容器管理和服务部署的整体解决方案平台－Docker DataCenter，简称DDC。
+探其结构，除了底层的Docrker Engine本身以外，DDC主要由DTR（Docker Trusted Registry）和UCP（Universal Control Plane）两大组件组成。
+DDC在Docker官网地址是：<a href="http://www.docker.com/products/docker-datacenter#">http://www.docker.com/products/docker-datacenter</a>
+</p>
+<img alt="docker datacenter" src="images/image_docker_0.png" style="width:auto;max-width:800px">
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+Docker本身是开源技术，但DDC人家可是闭源收费的！目前一共有两大类收费方式：Docker DataCenter 或 Docker Cloud。
+“DataCenter”方式为您提供DDC软件下载，收取License费用和服务费用；“Cloud”方式其实是Docker为您在线提供了与标准公有云类似的公有CaaS（Container as a Service）服务，按用量和时间计费。
+为了防止图片太多、文章太长，这里就不截图了，感兴趣的同学，可以在这里了解相关信息：<a href="http://www.docker.com/pricing">http://www.docker.com/pricing</a>
+</p>
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+当然，Docker目前在第一类收费方式中也给我们提供了免费下载试用30天的链接，这也就给我们安装试用DDC提供了机会。
+免费试用注册地址如下：<a href="https://hub.docker.com/enterprise/trial/">https://hub.docker.com/enterprise/trial/</a>。
+注册时，需要输入姓名、公司、职位、公司邮箱、电话号码、所在国家等信息：
+</p>
+<img alt="docker datacenter" src="images/ddc-reg.png" style="width:auto;max-width:800px">
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+细心的同学这时候一定已经发现了，Docker在右上角正式告诉你，DCC其实一共是由DTR、UCP和Commercially Supported Docker Engine（CS Engine）三部分组成的，开源版本的Docker Engine在第一步就这样被无情的宣布了出局。。。
+</p>
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+所以，正确的DDC逻辑架构图，画风应该是这样的：<br>
+</p>
+<img alt="docker datacenter" src="images/ddc-arch.png" style="width:auto;max-width:350px"><br>
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+确认注册成功后，会收到Docker的祝贺邮件，同时会跳转到下边的页面：<a href="https://hub.docker.com/enterprise/trial/success/?namespace=yourname&step=1">https://hub.docker.com/enterprise/trial/success/?namespace=yourname&step=1</a>。
+</p>
+<img alt="docker datacenter" src="images/ddc-step1.png" style="width:auto;max-width:800px"><br>
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+终于，可以正式开始安装了！
+</p>
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+第一步，安装Docker CS Engine。
+</p>
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+随便在东网云cloud.neunn.com找了一台Ubuntu 14.04的VM，开动！
+</p>
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+因为是Ubuntu系统，所以使用下边的DEB安装脚本：
+</p>
+<blockquote style="background-color:#e5e5e5">
+<br>$ wget -qO- 'https://pgp.mit.edu/pks/lookup?op=get&search=0xee6d536cf7dc86e2d7d56f59a178ac6c6238f52e' | sudo apt-key add --import
+<br>$ sudo apt-get update && sudo apt-get install apt-transport-https
+<br>$ sudo apt-get install -y linux-image-extra-virtual
+<br>$ echo "deb https://packages.docker.com/1.10/apt/repo ubuntu-trusty main" | sudo tee /etc/apt/sources.list.d/docker.list
+<br>$ sudo apt-get update && sudo apt-get install docker-engine
+<br><br>
+</blockquote>
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+另外，RPM的安装脚本是：
+</p>
+<blockquote style="background-color:#e5e5e5">
+<br>$ sudo rpm --import "https://pgp.mit.edu/pks/lookup?op=get&search=0xee6d536cf7dc86e2d7d56f59a178ac6c6238f52e"
+<br>$ sudo yum install -y yum-utils
+<br>$ sudo yum-config-manager --add-repo https://packages.docker.com/1.10/yum/repo/main/centos/7
+<br>$sudo yum install docker-engine
+<br><br>
+</blockquote>
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+整个过程大概就是：下载密钥、安装必要的依赖包、安装CS Engine等等，按照提示一步步往下走就可以了，基本不会遇到问题。
+</p>
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+第二步，安装DTR＋UCP。
+</p>
+<img alt="docker datacenter" src="images/ddc-step2.png" style="width:auto;max-width:800px"><br>
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+UCP有单独的安装文档，我们先说DTR。DTR的安装脚本就一句，如下：
+</p>
+<blockquote style="background-color:#e5e5e5">
+<br>$ sudo bash -c "$(sudo docker run docker/trusted-registry install)
+<br><br>
+</blockquote>
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+注意，这条看似简单的命令，在天朝可能要有坑了：首先，下载镜像，中途可能会出错，不过这个好办，多来几次应该总会成功；其次报错，错误信息是：
+</p>
+<blockquote style="background-color:#e5e5e5">
+<br>“Error response from daemon: Get https://registry-1.docker.io/v2/docker/trusted-registry/manifests/1.4.3: 
+<br>Get https://auth.docker.io/token?scope=repository%3Adocker%2Ftrusted-registry%3Apull&service=registry.docker.io: 
+<br>net/http: TLS handshake timeout”
+<br><br>
+</blockquote>
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+这个应该怎么处理。。。
+</p>
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+看到了“auth.xxxx.xx”，是不是要登录啊，试试也不要钱，只能这样了：
+</p>
+<blockquote style="background-color:#e5e5e5">
+<br>ubuntu@ubuntu1404-01:~$ docker login
+<br>Username: cuiyuanzhi
+<br>Password:
+<br>Email: xxx@GMAIL.COM
+<br>Error response from daemon: Server Error: Post https://index.docker.io/v1/users/: net/http: TLS handshake timeout
+<br>ubuntu@ubuntu1404-01:~$ ping index.docker.io
+<br>PING us-east-1-elbio-rm5bon1qaeo4-623296237.us-east-1.elb.amazonaws.com (52.0.10.162) 56(84) bytes of data.
+<br>^C
+<br>--- us-east-1-elbio-rm5bon1qaeo4-623296237.us-east-1.elb.amazonaws.com ping statistics ---
+<br>v141 packets transmitted, 0 received, 100% packet loss, time 140209ms
+<br>ubuntu@ubuntu1404-01:~$
+<br><br>
+</blockquote>
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+结果又有新错误，Ping目标地址都不通啊。。。
+</p>
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+还好可以Shadowsocks，直接参考StackOverFlow的建议再搞：
+</p>
+<blockquote style="background-color:#e5e5e5">
+<br>ubuntu@ubuntu1404-01:~$ curl -v https://index.docker.io:443
+<br>* Rebuilt URL to: https://index.docker.io:443/
+<br>* Hostname was NOT found in DNS cache
+<br>*   Trying 54.164.250.255...
+<br>* Connected to index.docker.io (54.164.250.255) port 443 (#0)
+<br>* successfully set certificate verify locations:
+<br>*   CAfile: none
+<br>  CApath: /etc/ssl/certs
+<br>* SSLv3, TLS handshake, Client hello (1):
+<br>* SSLv3, TLS handshake, Server hello (2):
+<br>* SSLv3, TLS handshake, CERT (11):
+<br>* SSLv3, TLS handshake, Server key exchange (12):
+<br>* SSLv3, TLS handshake, Server finished (14):
+<br>* SSLv3, TLS handshake, Client key exchange (16):
+<br>* SSLv3, TLS change cipher, Client hello (1):
+<br>* SSLv3, TLS handshake, Finished (20):
+<br>* SSLv3, TLS change cipher, Client hello (1):
+<br>* SSLv3, TLS handshake, Finished (20):
+<br>* SSL connection using ECDHE-RSA-AES128-GCM-SHA256
+<br>* Server certificate:
+<br>*    subject: OU=GT98568428; OU=See www.rapidssl.com/resources/cps (c)15; OU=Domain Control Validated - RapidSSL(R); CN=*.docker.io
+<br>*    start date: 2015-03-19 17:34:32 GMT
+<br>*    expire date: 2018-04-21 01:51:52 GMT
+<br>*    subjectAltName: index.docker.io matched
+<br>*    issuer: C=US; O=GeoTrust Inc.; CN=RapidSSL SHA256 CA - G3
+<br>*    SSL certificate verify ok.
+<br>> GET / HTTP/1.1
+<br>> User-Agent: curl/7.35.0
+<br>> Host: index.docker.io
+<br>> Accept: */*
+<br>>
+<br>< HTTP/1.1 301 MOVED PERMANENTLY
+<br>* Server nginx/1.6.2 is not blacklisted
+<br>< Server: nginx/1.6.2
+<br>< Date: Mon, 29 Feb 2016 02:23:25 GMT
+<br>< Content-Type: text/html; charset=utf-8
+<br>< Transfer-Encoding: chunked
+<br>< X-Frame-Options: SAMEORIGIN
+<br>< Location: https://registry.hub.docker.com/
+<br>< Strict-Transport-Security: max-age=31536000
+<br><
+<br>* Connection #0 to host index.docker.io left intact
+<br>ubuntu@ubuntu1404-01:~$ docker login
+<br>Username: cuiyuanzhi
+<br>Password:
+<br>Email: cuiyuanzhi@gmail.com
+<br>WARNING: login credentials saved in /home/ubuntu/.docker/config.json
+<br>Login Succeeded
+<br>ubuntu@ubuntu1404-01:~$
+<br><br>
+</blockquote>
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+登录成了，再次执行命令：
+</p>
+<blockquote style="background-color:#e5e5e5">
+<br>ubuntu@ubuntu1404-01:~$ sudo bash -c "$(sudo docker run docker/trusted-registry install)"
+<br>Checking for required image: docker/trusted-registry-distribution:v2.2.1
+<br>Checking for required image: postgres:9.4.1
+<br>Checking for required image: docker/trusted-registry:1.4.3
+<br>Checking for required image: docker/trusted-registry-admin-server:1.4.3
+<br>1.4.3: Pulling from docker/trusted-registry-admin-server
+<br>9943fffae777: Already exists
+<br>fb15e825cb68: Already exists
+<br>b9583a207297: Already exists
+<br>a3ed95caeb02: Already exists
+<br>ad81ef6474b3: Already exists
+<br>a1d5b287aebf: Pull complete
+<br>Digest: sha256:9b4b672e4966cc75efba99cac0b6fa21d16060632f20555edec5fa97c9ce1296
+<br>Status: Image is up to date for docker/trusted-registry-admin-server:1.4.3
+<br>Checking for required image: docker/trusted-registry-log-aggregator:1.4.3
+<br>Error response from daemon: Get https://registry-1.docker.io/v2/docker/trusted-registry-log-aggregator/manifests/1.4.3: Get https://auth.docker.io/token?account=cuiyuanzhi&scope=repository%3Adocker%2Ftrusted-registry-log-aggregator%3Apull&service=registry.docker.io: net/http: TLS handshake timeout
+<br>ubuntu@ubuntu1404-01:~$
+<br><br>
+</blockquote>
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+再次报错。。。没事，还是“TLS handshake timeout”，再来一次“curl –v”：
+</p>
+<blockquote style="background-color:#e5e5e5">
+<br>ubuntu@ubuntu1404-01:~$ curl -v https://auth.docker.io:443
+<br><br>
+</blockquote>
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+再次执行命令，开始各种下载镜像，正好去开个会。也不知过了多久，安装成功了。
+</p>
+<blockquote style="background-color:#e5e5e5">
+<br>Bringing up docker_trusted_registry_registry_index.
+<br>Creating container docker_trusted_registry_registry_index with docker daemon unix:///var/run/docker.sock
+<br>Starting container docker_trusted_registry_registry_index with docker daemon unix:///var/run/docker.sock
+<br>Bringing up docker_trusted_registry_load_balancer.
+<br>Creating container docker_trusted_registry_load_balancer with docker daemon unix:///var/run/docker.sock
+<br>Starting container docker_trusted_registry_load_balancer with docker daemon unix:///var/run/docker.sock
+<br>Bringing up docker_trusted_registry_admin_server.
+<br>Creating container docker_trusted_registry_admin_server with docker daemon unix:///var/run/docker.sock
+<br>Starting container docker_trusted_registry_admin_server with docker daemon unix:///var/run/docker.sock
+<br>Bringing up docker_trusted_registry_log_aggregator.
+<br>Creating container docker_trusted_registry_log_aggregator with docker daemon unix:///var/run/docker.sock
+<br>Starting container docker_trusted_registry_log_aggregator with docker daemon unix:///var/run/docker.sock
+<br>Bringing up docker_trusted_registry_auth_server.
+<br>Creating container docker_trusted_registry_auth_server with docker daemon unix:///var/run/docker.sock
+<br>Starting container docker_trusted_registry_auth_server with docker daemon unix:///var/run/docker.sock
+<br>Bringing up docker_trusted_registry_postgres.
+<br>Creating container docker_trusted_registry_postgres with docker daemon unix:///var/run/docker.sock
+<br>Container already exists for daemon at unix:///var/run/docker.sock: docker_trusted_registry_postgres
+<br>Starting container docker_trusted_registry_postgres with docker daemon unix:///var/run/docker.sock
+<br>Container docker_trusted_registry_postgres is already running for daemon at unix:///var/run/docker.sock
+<br>ubuntu@ubuntu1404-01:~$
+<br><br>
+</blockquote>
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+该启的东西应该是都启来了，根据安装页面提示，去DTR管理界面看一眼吧。结果，画风竟然是这样的。。。
+</p>
+<img alt="docker datacenter" src="images/dtr-portal.png" style="width:auto;max-width:800px"><br>
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+右边报了几个小红错，应该分别是“无域名”、“无licenese”和“未设置认证”导致的。决定暂时不用管它，应该不会影响使用。
+</p>
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+继续，开始安装UCP。
+</p>
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+UCP是DDC的主角，有好几种安装方式，为了图快，选择了Mac OS X下的Virtual Box VM安装。更高端的生产环境安装方式，有时间再尝试吧。UCP的安装指南地址是：
+<a href="https://docs.docker.com/ucp/evaluation-install/">https://docs.docker.com/ucp/evaluation-install</a>
+</p>
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+在Mac OS X下使用Docker需要安装Docker Toolbox，如果安装这里就不再赘述了，它的下载地址是：
+<a href="https://www.docker.com/products/docker-toolbox">https://www.docker.com/products/docker-toolbox</a>
+</p>
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+Docker Toolbox搞定后，正式开工：
+</p>
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+用docker-machine查看所有当前vm实例：
+</p>
+<blockquote style="background-color:#e5e5e5">
+<br>$ docker-machine ls
+<br>NAME      ACTIVE   DRIVER       STATE     URL                         SWARM   DOCKER    ERRORS
+<br>default   -        virtualbox   Stopped                                       Unknown 
+<br><br>
+</blockquote>
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+创建明字为node1的VM：
+</p>
+<blockquote style="background-color:#e5e5e5">
+<br>$ docker-machine create -d virtualbox \
+<br>--virtualbox-memory "2000" \
+<br>--virtualbox-disk-size "5000" node1
+<br>Running pre-create checks...
+<br>Creating machine...
+<br>(node1) Copying /Users/mary/.docker/machine/cache/boot2docker.iso to /Users/mary/.docker/machine/machines/node1/boot2docker.iso...
+<br>(node1) Creating VirtualBox VM...
+<br>(node1) Creating SSH key...
+<br>(node1) Starting the VM...
+<br>(node1) Waiting for an IP...
+<br>Waiting for machine to be running, this may take a few minutes...
+<br>Machine is running, waiting for SSH to be available...
+<br>Detecting operating system of created instance...
+<br>Detecting the provisioner...
+<br>Provisioning with boot2docker...
+<br>Copying certs to the local machine directory...
+<br>Copying certs to the remote machine...
+<br>Setting Docker configuration on the remote daemon...
+<br>C>hecking connection to Docker...
+<br>Docker is up and running!
+<br>To see how to connect Docker to this machine, run: docker-machine env node1
+<br><br>
+</blockquote>
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+创建明字为node2的VM：
+</p>
+<blockquote style="background-color:#e5e5e5">
+<br>$ docker-machine create -d virtualbox \
+<br>--virtualbox-memory "2000" node2
+<br><br>
+</blockquote>
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+查看是否两个node都创建成功：
+</p>
+<blockquote style="background-color:#e5e5e5">
+<br>$ docker-machine ls
+<br>NAME      ACTIVE   DRIVER       STATE     URL                         SWARM   DOCKER    ERRORS
+<br>default   -        virtualbox   Stopped                                       Unknown  
+<br>dev       -        virtualbox   Error                                         Unknown   machine does not exist
+<br>node1     -        virtualbox   Running   tcp://192.168.99.100:2376           v1.10.2  
+<br>node2     -        virtualbox   Running   tcp://192.168.99.101:2376           v1.10.2  
+<br><br>
+</blockquote>
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+继续，将node1安装为UCP Controller。
+</p>
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+首先设置node1环境变量：
+</p>
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+a．
+</p>
+<blockquote style="background-color:#e5e5e5">
+<br>$ docker-machine env node1
+<br>export DOCKER_TLS_VERIFY="1"
+<br>export DOCKER_HOST="tcp://192.168.99.103:2376"
+<br>export DOCKER_CERT_PATH="/Users/mary/.docker/machine/machines/node1"
+<br>export DOCKER_MACHINE_NAME="node1"
+<br># Run this command to configure your shell:
+<br># eval $(docker-machine env node1)
+<br><br>
+</blockquote>
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+b．
+</p>
+<blockquote style="background-color:#e5e5e5">
+<br>$ eval $(docker-machine env node1)
+<br><br>
+</blockquote>
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+c．
+</p>
+<blockquote style="background-color:#e5e5e5">
+<br>$ docker-machine ls
+<br>NAME         ACTIVE   DRIVER       STATE     URL                         SWARM   DOCKER    ERRORS
+<br>node1        *        virtualbox   Running   tcp://192.168.99.100:2376           v1.10.2  
+<br>node2        -        virtualbox   Running   tcp://192.168.99.101:2376           v1.10.2  
+<br><br>
+</blockquote>
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+然后用UCP tool开始交互式安装：
+</p>
+<blockquote style="background-color:#e5e5e5">
+<br>$ docker run --rm -it \
+<br>-v /var/run/docker.sock:/var/run/docker.sock \
+<br>--name ucp docker/ucp install -i \
+<br>--swarm-port 3376 --host-address $(docker-machine ip node1)
+<br>Unable to find image 'docker/ucp:latest' locally
+<br>latest: Pulling from docker/ucp
+<br>0198ad4008dc: Pull complete
+<br>291084ae72f3: Pull complete
+<br>Digest: sha256:28b6c9640e5af0caf2b2acbbbfd7c07bdbec6b170f04cbaeea7bb4909d74898d
+<br>INFO[0000] Verifying your system is compatible with UCP
+<br><br>
+</blockquote>
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+输入默认密码：
+</p>
+<blockquote style="background-color:#e5e5e5">
+<br>Please choose your initial UCP admin password:
+<br>Confirm your initial password:
+<br>INFO[0016] Pulling required images... (this may take a while)
+<br><br>
+</blockquote>
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+中途还会提示一些信息，但最后，安装很快成功了。
+</p>
+<blockquote style="background-color:#e5e5e5">
+<br>INFO[0001] Generating UCP Cluster Root CA              
+<br>INFO[0014] Generating UCP Client Root CA               
+<br>INFO[0017] Deploying UCP Containers                    
+<br>INFO[0024] UCP instance ID: LTP6:RHXO:4YPE:OPXL:3UAI:JK37:CWXM:APTW:5KP2:PEF3:CCDD:YL5B
+<br>INFO[0024] UCP Server SSL: SHA1 Fingerprint=86:85:49:A8:A1:30:65:EA:B9:7A:DE:65:82:8B:E7:04:9F:33:DB:CF
+<br>INFO[0024] Login as "admin"/(your admin password) to UCP at https://192.168.99.100:443
+<br>bash-3.2$
+<br><br>
+</blockquote>
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+登入图形界面：
+</p>
+<img alt="docker datacenter" src="images/ddc-login.png" style="width:auto;max-width:800px">
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+上传License：
+</p>
+<img alt="docker datacenter" src="images/ddc-reg-in.png" style="width:auto;max-width:800px">
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+License是在DDC试用的注册第三步下载的：
+</p>
+<img alt="docker datacenter" src="images/ddc-step3.png" style="width:auto;max-width:800px">
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+好了，导入成功后，界面大概是这样的：
+</p>
+<img alt="docker datacenter" src="images/ucp-portal.png" style="width:auto;max-width:800px">
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+这个时候，其实右上角的Nodes应该为1，只不过我当时忘记抓图了后补的所以。。。
+</p>
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+好了，添加node2，还是先整环境变量：
+</p>
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+a．
+</p>
+<blockquote style="background-color:#e5e5e5">
+<br>$ docker-machine env node2
+<br>export DOCKER_TLS_VERIFY="1"
+<br>export DOCKER_HOST="tcp://192.168.99.101:2376"
+<br>export DOCKER_CERT_PATH="/Users/mary/.docker/machine/machines/node2"
+<br>export DOCKER_MACHINE_NAME="node2"
+<br># Run this command to configure your shell:
+<br># eval $(docker-machine env node2)
+<br><br>
+</blockquote>
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+b．
+</p>
+<blockquote style="background-color:#e5e5e5">
+<br>$ eval $(docker-machine env node2)
+<br><br>
+</blockquote>
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+开始添加node2：
+</p>
+<blockquote style="background-color:#e5e5e5">
+<br>$ docker run --rm -it \
+<br>-v /var/run/docker.sock:/var/run/docker.sock \
+<br>--name ucp docker/ucp join -i \
+<br>--host-address $(docker-machine ip node2)
+<br><br>
+</blockquote>
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+输入安装好的UCP Server地址：
+</p>
+<blockquote style="background-color:#e5e5e5">
+<br>Status: Downloaded newer image for docker/ucp:latest
+<br>Please enter the URL to your UCP server: https://192.168.99.100
+<br>UCP server https://192.168.99.100
+<br>Subject: ucp
+<br>Issuer: UCP Client Root CA
+<br>SHA1 Fingerprint=86:85:49:A8:A1:30:65:EA:B9:7A:DE:65:82:8B:E7:04:9F:33:DB:CF
+<br>Do you want to trust this server and proceed with the join? (y/n): y
+<br>Please enter your UCP Admin username: admin
+<br>Please enter your UCP Admin password:
+<br>INFO[0036] Pulling required images... (this may take a while)
+<br><br>
+</blockquote>
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+这个需要点时间。。。嗯，确实很久，喝杯茶去。。。
+</p>
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+过一会儿回来，已经安装成功了：
+</p>
+<blockquote style="background-color:#e5e5e5">
+<br>INFO[0000] Verifying your system is compatible with UCP
+<br>INFO[0007] Starting local swarm containers 
+<br><br>
+</blockquote>
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+所以，上图UCP显示的Nodes显示的2，就是这么来的。。。
+</p>
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+继续，第四部，安全和配置。
+</p>
+<img alt="docker datacenter" src="images/ddc-step4.png" style="width:auto;max-width:800px">
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+这里我就不多说了，大家直接参考官方文档吧。不配置，其实应该也是能用的。
+</p>
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+最后，去UCP里头看了一圈，好像也没有啥特别，其实就是一个Docker Swarm的管理界面，可以部署容器，查看节点信息什么的。。。
+</p>
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+对了，好像突然想起了什么事情，之前装了半天的DTR好像没有用上啊。。。这什么情况？？？
+</p>
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+之后在UCP里找了一下，人家是可以配置自己的DTR的，如图：
+</p>
+<img alt="docker datacenter" src="images/ucp-dtr.png" style="width:auto;max-width:800px">
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+好了，这回你满意了吧。。。
+</p>
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+至此，Docker DataCenter快速预览环境已经搭建完成了。其核心组建DTR、UCP都有哪些功能，还需要我们仔细挖掘。
+可是不过，预览license的试用时间可是只有30天喔，动手记得要快～
+</p>
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+崔远智
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+2016/3/1 01:17
+</p>
+
+
+</body>
+</html>

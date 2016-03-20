@@ -80,13 +80,34 @@ auth-lb:
   - auth-service:auth-service
   stdin_open: true<br>
 </code></pre></blockquote>
+<p>我们正在用Rancher Compose来启动一个多主机环境，这和生产环境几乎一摸一样，同时也允许我们与其它服务一同测试集成环境，比如Rancher和Docker Hub等。
+这和我们之前基于docker compose构建的仅限于作为独立的外部服务、在CI服务器上运行且不会向dockerhub提交镜像的环境不同，</p>
 
+<p>现在我们要用Rancher Compose来构建一个多主机测试环境，而不是Docker Compose，我们同样需要定义一个rancher compose模版。
+创建一个名为rancher-compose.yml的文件，然后添加下述内容。在这个文件中，我们为auth服务定义了2个容器，一个用来运行数据库，另一个运行负载均衡。</p>
+<blockquote style="background-color:#e5e5e5"><pre><code>
+  scale: 2
+mysql-master:
+  scale: 1
+auth-lb
+  scale: 1<br>
+</code></pre></blockquote>
 
-
-
-
-
-
+<p>接下来，我们为auth-service增加一个健康检查服务，确保我们能过检测这些容器何时能够启动并接受请求。
+所以，我们为go-auth服务添加“/health” URI。auth-service在rancher-compose.yml文件中看起来应该是这个样子的：
+</p>
+<blockquote style="background-color:#e5e5e5"><pre><code>
+auth-service
+  scale: 1
+  health_check:
+    port: 9000
+    interval: 2000
+    unhealthy_threshold: 3
+    request_line: GET /health HTTP/1.0
+    healthy_threshold: 2 
+    response_timeout: 2000
+    
+</code></pre></blockquote>
 
 
 

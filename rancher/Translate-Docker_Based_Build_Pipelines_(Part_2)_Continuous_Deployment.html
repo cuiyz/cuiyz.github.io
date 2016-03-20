@@ -5,7 +5,7 @@
 <title>译文：基于Docker的构建(第二部分) － 持续部署</title>
 </head>
 <body style="text-indent:2em">
-<h2 align="center">译文：基于Docker的构建(第二部分) － 持续部署</h2>
+<h1 align="center">译文：基于Docker的构建(第二部分) － 持续部署</h1>
 <p align="center">原作者:Usman Ismail, Bilal Sheikh &nbsp;&nbsp;&nbsp;&nbsp; 译者:崔远智</p>
 
 <p>在之前的文章中，我们已经看到了关于“<a href="http://rancher.com/deploying-a-scalable-jenkins-cluster-with-docker-and-rancher/">如何基于Docker搭建一个Jenkins的CI环境</a>”以及“<a href="http://rancher.com/docker-based-build-pipelines-part-1-continuous-integration-and-testing/">利用Docker搭建持续集成环境</a>”的阐述。因为使用了Docker，所以我们的集中控制构建环境可以扩展至任何数量的机器。同时，在Jenkins的CI环境基础上实现了全自动的持续构建、打包和测试。</p>
@@ -16,7 +16,7 @@
 
 <p align="center"><img src="images/cd_flow-1024x275.png" style="width:auto;max-width:800px"></p>
 
-<h3>使用Docker和Rancher创建长测环境</h3>
+<h2>使用Docker和Rancher创建长测环境</h2>
 <p>我们对应用完成构建和测试之后，就可以把它发布到长测环境，它甚至是外部可访问的。这个环境将允许QA甚至用户在产品发布到生产环境前进行测试。
 这个环境是生产环境部署之前非常重要的一个环节，因为它能够让我们从真实环境中挖掘更多的bug，而不单单是自动化测试而以。我们通常把这个环境叫做“质保”环境或“集成环境”。
 像<a href="http://rancher.com/docker-based-build-pipelines-part-1-continuous-integration-and-testing/">上一篇</a>文章一样，我们将使用<a href="https://github.com/usmanismail/go-messenger">go-messenger</a>项目的go-auth组件来创建我们的测试环境。具体步骤如下：
@@ -27,7 +27,7 @@
 <p>4.使用Rancher和AWS Route53管理DNS纪录</p>
 <p>5.添加HTTPS支持</p>
 
-<h4>在Rancher中创建一个集成环境</h4>
+<h3>在Rancher中创建一个集成环境</h3>
 <p>在Rancher界面中，有上角选择“Manage Environments”并且“Add Environment”。在弹出的界面中添加名字“Integration”并根据需求添加描述。
 同时，你也要选择可以访问这个环境的用户和组织。</p>
 <p align="center"><img src="images/Screen-Shot-2015-10-26-at-10.33.44-PM.png" style="width:auto;max-width:600px"></p>
@@ -38,7 +38,7 @@
 注意：每一个环境都要使用单独的Key来管理，所以我们需要针对所有的环境都单独创建一个key。</p>
 <p align="center"><img src="images/api_keys.png" style="width:auto;max-width:700px"></p>
 
-<h4>定义Docker Compose和Rancher Compose模版</h4>
+<h3>定义Docker Compose和Rancher Compose模版</h3>
 <p>在<a href="http://rancher.com/docker-based-build-pipelines-part-1-continuous-integration-and-testing/">上一篇</a>文章中，
 我们创建了docker compose模版来定义项目需要的容器类型，如下。我们将使用跟之前一样的docker compose模版，但是会增加新的auth-lb服务。
 这样，就会在我们的go-auth服务前增加负载均衡服务，在所有的容器间进行分流。
@@ -108,6 +108,68 @@ auth-service
     response_timeout: 2000
     
 </code></pre></blockquote>
+<p>我们在容器的9000端口上定义了一个健康检查，每2秒钟运行一次。它会向“/health”这个URI发送http请求，3个连续失败将标记容器为“不健康”，
+2个连续成功则标记该容器为“健康”。</p>
+
+<h3>使用Rancher Compose创建应用栈</h3>
+<p>现在，我们已经定义好了模版，可以使用Rancher compose来启动我们的环境了。简单分为如下几步。
+从<a href="https://github.com/usmanismail/go-messenger">go-messenger project</a>下载rancher-compose CLI。
+按照<a http://docs.rancher.com/rancher/rancher-compose/">rancher-compose</a>的帮助安装好rancher-compose。
+一切安装好以后，按照下面的命令设置你的集成环境。</p>
+<blockquote style="background-color:#e5e5e5"><pre><code>
+git clone https://github.com/usmanismail/go-messenger.git
+cd go-messenger/deploy
+
+#replace rancher-compose with the latest version you downloaded from rancher UI
+./rancher-compose  --project-name messenger-int \
+    --url http://YOUR_RANCHER_SERVER:PORT/v1/   \
+    --access-key <API_KEY>                      \
+    --secret-key <SECRET_KEY>                   \
+    --verbose create
+    
+</code></pre></blockquote>
+<p>在UI中，你也应该能够看到stack和services了。注意，“create”命令只创建Stack但是不启动Service，你可以通过UI或者rancher-compose命令行来启动他们。</p>
+<p align="center"><img src="images/messenger-int-stack-not-started1.png" style="width:auto;max-width:700px"></p>
+<p>让我们尝试用rancher-compose命令行来启动服务。</p>
+<blockquote style="background-color:#e5e5e5"><pre><code>
+./rancher-compose  --project-name messenger-int \
+    --url http://YOUR_RANCHER_SERVER:PORT/v1/   \
+    --access-key <API_KEY>                      \
+    --secret-key <SECRET_KEY>                   \
+    --verbose start
+    
+</code></pre></blockquote>
+<p>为确保所有服务工作正常，使用“auth-lb”服务所在主机的公共IP用下述命令创建一个用户。应该收到“200 OK”。
+重复请求，应该收到“409 error”错误，说明数据库中已经存在此用户了。
+到此，我们已经拥有了一个基本的集成环境，作为我们应用后续使用的长测环境</p>
+<blockquote style="background-color:#e5e5e5"><pre><code>
+curl -i -silent -X PUT -d userid=<TEST_USERNAME> -d password=<TEST_PASS> <HOST_IP_FOR_AUTH_LB>:9000/user
+    
+</code></pre></blockquote>
+
+<h3>使用Rancher和AWS Route53管理DNS纪录</h3>
+<p>因为这个环境要作为长测环境并对外可访问，所以我们要配置DNS和HTTPS。
+这让我们可以在公司防火墙外更加安全的部署应用，同时用户也不必担心IP变化可能带来的困扰。
+你可以自己选择DNS服务商，但今天我们要采用Amazon Route53来进行演示。
+首先，在“AWS Console > Route 53 > Hosted Zones”里创建“Hosted Zone”。
+这里，你要指定一个域名。同时，你也可以创建一个用户，为后续Rancher动态更新DNS纪录所用。
+创建的路径是“AWS Console > IAMS > Users”，选择“Create New Users”。
+注意保存好“Access Key”和“Secret Key”，后边会用到。
+另外，你要给这个用户添加“AmazonRoute53FullAccess”才行，才能实现与Rancher的联动控制。</p>
+<p>都弄好以后，在rancher server上选择“Applications > Catalog”并添加“Route 53 DNS”。
+填写你之前纪录的“Hosted Zone”以及“Access Key”和“Secret Key”。
+完成以后，在你的stack中就会看到一个叫做“route53”的服务。</p>
+<p align="center"><img src="images/Screen-Shot-2015-11-12-at-10.40.51-PM.png" style="width:auto;max-width:300px"></p>
+<p>这个服务将会监听Rancher的事件，根据负载均衡的变化，自动的调整DNS纪录。
+DNS纪录的格式是“[Loadbalancer].[stack].[environment].[domain]”，例如“goauth.integration.testing.gomessenger.com”。
+有了Route53，负载均衡实例和数量变化的时候，我们就不用担心获取最新IP和主机名的问题了。</p>
+
+<h3>添加HTTPS支持</h3>
+
+
+
+
+
 
 
 

@@ -5,14 +5,14 @@
 <title>企业级容器管理平台－DDC（Docker DataCenter）的快速安装与初探</title>
 </head>
 <body>
-<h2>企业级容器管理平台－DDC（Docker DataCenter）的快速安装与初探</h2>
+<h2 align="center">企业级容器管理平台－DDC（Docker DataCenter）的快速安装与初探</h2>
 <p>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 2016年2月下旬，Docker发布了企业级容器管理和服务部署的整体解决方案平台－Docker DataCenter，简称DDC。
 探其结构，除了底层的Docrker Engine本身以外，DDC主要由DTR（Docker Trusted Registry）和UCP（Universal Control Plane）两大组件组成。
 DDC在Docker官网地址是：<a href="http://www.docker.com/products/docker-datacenter#">http://www.docker.com/products/docker-datacenter</a>
 </p>
-<img alt="docker datacenter" src="images/image_docker_0.png" style="width:auto;max-width:800px">
+<p align="center"><img alt="docker datacenter" src="images/image_docker_0.png" style="width:auto;max-width:800px"></p>
 <p>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Docker本身是开源技术，但DDC人家可是闭源收费的！目前一共有两大类收费方式：Docker DataCenter 或 Docker Cloud。
@@ -25,7 +25,7 @@ Docker本身是开源技术，但DDC人家可是闭源收费的！目前一共�
 免费试用注册地址如下：<a href="https://hub.docker.com/enterprise/trial/">https://hub.docker.com/enterprise/trial/</a>。
 注册时，需要输入姓名、公司、职位、公司邮箱、电话号码、所在国家等信息：
 </p>
-<img alt="docker datacenter" src="images/ddc-reg.png" style="width:auto;max-width:800px">
+<p align="center"><img alt="docker datacenter" src="images/ddc-reg.png" style="width:auto;max-width:800px"></p>
 <p>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 细心的同学这时候一定已经发现了，Docker在右上角正式告诉你，DCC其实一共是由DTR、UCP和Commercially Supported Docker Engine（CS Engine）三部分组成的，开源版本的Docker Engine在第一步就这样被无情的宣布了出局。。。
@@ -34,12 +34,12 @@ Docker本身是开源技术，但DDC人家可是闭源收费的！目前一共�
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 所以，正确的DDC逻辑架构图，画风应该是这样的：<br>
 </p>
-<img alt="docker datacenter" src="images/ddc-arch.png" style="width:auto;max-width:350px"><br>
+<p align="center"><img alt="docker datacenter" src="images/ddc-arch.png" style="width:auto;max-width:350px"></p>
 <p>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 确认注册成功后，会收到Docker的祝贺邮件，同时会跳转到下边的页面：<a href="https://hub.docker.com/enterprise/trial/success/?namespace=yourname&step=1">https://hub.docker.com/enterprise/trial/success/?namespace=yourname&step=1</a>。
 </p>
-<img alt="docker datacenter" src="images/ddc-step1.png" style="width:auto;max-width:800px"><br>
+<p align="center"><img alt="docker datacenter" src="images/ddc-step1.png" style="width:auto;max-width:800px"></p>
 <p>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 终于，可以正式开始安装了！
@@ -50,7 +50,7 @@ Docker本身是开源技术，但DDC人家可是闭源收费的！目前一共�
 </p>
 <p>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-随便在东网云cloud.neunn.com找了一台Ubuntu 14.04的VM，开动！
+随便在东网云<a href="http://cloud.neunn.com/">cloud.neunn.com</a>找了一台Ubuntu 14.04的VM，开动！
 </p>
 <p>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -83,7 +83,7 @@ Docker本身是开源技术，但DDC人家可是闭源收费的！目前一共�
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 第二步，安装DTR＋UCP。
 </p>
-<img alt="docker datacenter" src="images/ddc-step2.png" style="width:auto;max-width:800px"><br>
+<p align="center"><img alt="docker datacenter" src="images/ddc-step2.png" style="width:auto;max-width:800px"></p>
 <p>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 UCP有单独的安装文档，我们先说DTR。DTR的安装脚本就一句，如下：
@@ -94,7 +94,7 @@ UCP有单独的安装文档，我们先说DTR。DTR的安装脚本就一句，�
 </blockquote>
 <p>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-注意，这条看似简单的命令，在天朝可能要有坑了：首先，下载镜像，中途可能会出错，不过这个好办，多来几次应该总会成功；其次报错，错误信息是：
+注意，这条看似简单的命令，在天朝可能要有坑了：首先，下载镜像，中途可能会出错，不过这个好办，多来几次应该总会成功；再次报错，错误信息是：
 </p>
 <blockquote style="background-color:#e5e5e5">
 <br>“Error response from daemon: Get https://registry-1.docker.io/v2/docker/trusted-registry/manifests/1.4.3: 
@@ -248,7 +248,7 @@ UCP有单独的安装文档，我们先说DTR。DTR的安装脚本就一句，�
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 该启的东西应该是都启来了，根据安装页面提示，去DTR管理界面看一眼吧。结果，画风竟然是这样的。。。
 </p>
-<img alt="docker datacenter" src="images/dtr-portal.png" style="width:auto;max-width:800px"><br>
+<p align="center"><img alt="docker datacenter" src="images/dtr-portal.png" style="width:auto;max-width:800px"></p>
 <p>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 右边报了几个小红错，应该分别是“无域名”、“无licenese”和“未设置认证”导致的。决定暂时不用管它，应该不会影响使用。
@@ -417,22 +417,22 @@ c．
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 登入图形界面：
 </p>
-<img alt="docker datacenter" src="images/ddc-login.png" style="width:auto;max-width:800px">
+<p align="center"><img alt="docker datacenter" src="images/ddc-login.png" style="width:auto;max-width:800px"></p>
 <p>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 上传License：
 </p>
-<img alt="docker datacenter" src="images/ddc-reg-in.png" style="width:auto;max-width:800px">
+<p align="center"><img alt="docker datacenter" src="images/ddc-reg-in.png" style="width:auto;max-width:800px"></p>
 <p>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 License是在DDC试用的注册第三步下载的：
 </p>
-<img alt="docker datacenter" src="images/ddc-step3.png" style="width:auto;max-width:800px">
+<p align="center"><img alt="docker datacenter" src="images/ddc-step3.png" style="width:auto;max-width:800px"></p>
 <p>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 好了，导入成功后，界面大概是这样的：
 </p>
-<img alt="docker datacenter" src="images/ucp-portal.png" style="width:auto;max-width:800px">
+<p align="center"><img alt="docker datacenter" src="images/ucp-portal.png" style="width:auto;max-width:800px"></p>
 <p>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 这个时候，其实右上角的Nodes应该为1，只不过我当时忘记抓图了后补的所以。。。
@@ -512,7 +512,7 @@ b．
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 继续，第四部，安全和配置。
 </p>
-<img alt="docker datacenter" src="images/ddc-step4.png" style="width:auto;max-width:800px">
+<p align="center"><img alt="docker datacenter" src="images/ddc-step4.png" style="width:auto;max-width:800px"></p>
 <p>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 这里我就不多说了，大家直接参考官方文档吧。不配置，其实应该也是能用的。
@@ -529,7 +529,7 @@ b．
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 之后在UCP里找了一下，人家是可以配置自己的DTR的，如图：
 </p>
-<img alt="docker datacenter" src="images/ucp-dtr.png" style="width:auto;max-width:800px">
+<p align="center"><img alt="docker datacenter" src="images/ucp-dtr.png" style="width:auto;max-width:800px"></p>
 <p>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 好了，这回你满意了吧。。。

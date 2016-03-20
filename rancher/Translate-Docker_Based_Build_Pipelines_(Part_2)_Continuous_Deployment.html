@@ -165,12 +165,121 @@ DNS纪录的格式是“[Loadbalancer].[stack].[environment].[domain]”，例�
 有了Route53，负载均衡实例和数量变化的时候，我们就不用担心获取最新IP和主机名的问题了。</p>
 
 <h3>添加HTTPS支持</h3>
+<p>现在，我们的环境有了DNS纪录，支持HTTPS是一个好主意。所以，首先我们需要为域名申请一个SSL认证。
+你可以从<a href="https://ssl.comodo.com">Comodo</a>或其它这样的公司买一个可信根SSL认证。
+当然，你也可以先自己生成一个，然后在找时间替换成可信认证。只是，使用自己生成的证书，用户会看到一个“This connection is untusted”的提示，
+但数据传输还是使用SSL加密的。自己生成SSL证书时，首先你需要使用openssl命令生成一个SSL Key。
+这里，你可以保存一下sha256指纹，以便后续对请求做一下手工严重，看看https是否真的生效了。
+保证指纹一致，是防止中间人攻击的唯一方法。</p>
+<blockquote style="background-color:#e5e5e5"><pre><code>
+openssl genrsa -out integration.gomessenger.com.key 2048
+openssl req -new -x509                   \
+    -key integration.gomessenger.com.key   \
+    -out integration.gomessenger.com.crt  \ 
+    -days 365 -subj /CN=integration.gomessenger.com
+openssl x509 -fingerprint -sha256 -in integration.gomessenger.com.crt
+SHA256 Fingerprint=E2:E5:86:09:F0:91:F4:3C:C2:DE:D1:40:9C:DD:AF:A2:0A:88:EE:19:0C:C5:A6:03:C9:9B:17:6E:8F:58:D2:C3
+    
+</code></pre></blockquote>
+<p>现在，可以把SSL证书和私钥上传到Rancher。可以通过Rancher UI的“Infrastructure tab > Certificates Section > Add Certificate”进行上传。
+这里，需要起一个有意义的名字，描述可选。把私钥和SSL证书的内容拷贝到“Private Key”和“Certificate”输入框，确定。
+稍等几秒，就会激活。</p>
+<p align="center"><img src="images/Screen-Shot-2015-10-31-at-9.32.22-AM.png" style="width:auto;max-width:800px"></p>
+<p>证书激活以后，就可以给环境添加HTTPS endpoint了。首先要修改docker-compose文件来增加SSL端口。
+增加第二个端口(9001)使它可以从外部访问，打上标签“io.rancher.loadbalancer.ssl.ports”说明他是负载均衡的公共SSL接口。
+进而，我们可以把外部的SSL请求路由到我们服务容器的9000端口上。通过“io.rancher.loadbalancer.target.auth-service”标签来实现这个端口映射。</p>
+<blockquote style="background-color:#e5e5e5"><pre><code>
+auth-lb:
+ ports:
+ - '9000'
+ - '9001'
+ labels:
+ io.rancher.loadbalancer.ssl.ports: '9001'
+ io.rancher.loadbalancer.target.auth-service: 9000=9000,9001=9000
+ tty: true
+ image: rancher/load-balancer-service
+ links:
+ - auth-service:auth-service
+ stdin_open: true
+mysql-master:
+  environment:
+  ...
+  ...
+    
+</code></pre></blockquote>
+<p>同样，我们也要更新一下rancher-compose文件，来指定SSL认证。添加“default_cert”参数。
+这里，你需要删除并重新创建你的stack，因为目前无法更新以及部署的stack的参数。</p>
+<blockquote style="background-color:#e5e5e5"><pre><code>
+auth-lb:
+  scale: 1
+  default_cert: integration.gomessenger.com_selfsigned
+  load_balancer_config:
+    name: auth-lb config
 
+mysql-master:
+  scale: 1
+auth-service:
+  scale: 1
+    
+</code></pre></blockquote>
+<p>为确保上述工作正确完成，我们可以首页curl命令尝试请求一下。9001端口，应该提示为不可信的认证。
+我们可以使用“–insecure”来屏蔽掉这个提示。</p>
+<blockquote style="background-color:#e5e5e5"><pre><code>
+# Http Request
+curl -i -silent -X PUT            \
+    -d userid=<TEST_USERNAME>     \
+    -d password=<TEST_PASS>       \
+    http://integration.gomessenger.com:9000/user
 
+# Https Request with secure checking
+# Note Http(s) and 900(1)
+curl -i -silent -X PUT            \
+ -d userid=<TEST_USERNAME>        \
+ -d password=<TEST_PASS>          \
+ https://integration.gomessenger.com:9001/user
+curl: (60) SSL certificate problem, verify that the CA cert is OK. Details: error:14090086:SSL routines:SSL3_GET_SERVER_CERTIFICATE:certificate verify failed
 
+# Https Request with insecure checking
+curl -i -silent -X PUT            \
+ --insecure                       \
+ -d userid=<TEST_USERNAME>        \
+ -d password=<TEST_PASS>          \
+ https://integration.gomessenger.com:9001/user
+    
+</code></pre></blockquote>
 
+<h2>使用Rancher和Jenkins创建持续部署环境</h2>
+<p>测试环境创建完成了，现在我们终于可以回到本文的正题，扩展现有的Jenkins CI实现持续部署(CD - continuous deployment)</p>
+<h3>发布Docker镜像</h3>
+<p>我们从把镜像发布到docker repository开始。为了简单起见，我们直接发布到公共到DockerHub repository，
+然而，实际开发中我们一般会发布到私有到repository中去。在Jenkins中创建一个“Free Style”项目，定义任务名为“push-go-auth-image“。
+完成以后，你将会被引导到配置页面，那里你可以配置把你的“go-auth”镜像提交到DockerHub的步骤。</p>
+<p>这和之前定义的“go-auth-integration-test”任务非常相似，首先设置为“parameterized build”，添加“GO_AUTH_VERSION”参数。</p>
+<p align="center"><img src="images/go_auth_parameter.png" style="width:auto;max-width:800px"></p>
+<p>为了能够真正提交镜像，我们选择“Add build step”然后选择“Execute shell“参数。在返回的文本框中，添加下边的命令行。
+命令行的意思分别是登陆docker hub和提交镜像。镜像被提交到了“usman/go-auth”库。</p>
+<p>像上篇文章中提到的，我们将使用git-flow分支模型来合并所有的分支到“develop”分支。
+为了实现持续部署，我们需要一个简单到机制来基于最新到develop分支构建镜像。
+在我们的打包任务中，我们用“GO_AUTH_VERSION”给容器打上标签(如：docker build -t usman/go-auth:${GO_AUTH_VERSION} …)。
+默认情况下，版本为develop，然而，文章后续我们将为应用创建新的release，并进行构建、打包、发布、测试、部署到集成环境。
+注意：这种情况下总是会构建最新的镜像而覆盖原有的历史版本，从而无法进行恢复和回滚。
+你可以使用一个简单的改变，就是使用构建序号来标识版本，比如：usman/go-auth:develop-14。</p>
+<p>注意，你需要使用你的DockerHub用户名、密码和email。你也可以使用
+<a href="https://wiki.jenkins-ci.org/display/JENKINS/Mask+Passwords+Plugin">Jenkins Mask Passwords Plugin</a>
+来安全的存储这些保密信息，实现每次执行任务时动态的注入。
+注意确保在“Build Environment”下为你的任务开启‘Mask passwords (and enable global passwords)’。</p>
+<blockquote style="background-color:#e5e5e5"><pre><code>
+echo ${GO_AUTH_VERSION}
+docker login -u ${DOCKERHUB_USERNAME} -p ${DOCKERHUB_PASSWORD} -e ${DOCKERHUB_EMAIL}
+docker push usman/go-auth:${GO_AUTH_VERSION}
+    
+</code></pre></blockquote>
+<p>现在，我们要确保这个任务在集成测试任务执行后被正确触发。更新集成测试任务的触发参数为当前任务的参数。
+这意味这每次集成测试任务完成，将自动上传测试镜像到DockerHub。</p>
+<p align="center"><img src="images/trigger_image_push_job.png" style="width:auto;max-width:800px"></p>
+<p>最后，我们需要在镜像成功上传后触发部署任务。同样的，我们也可以像其它任务一样增加一个post-build的动作。</p>
 
-
+<h2>部署到集成环境</h2>
 
 
 

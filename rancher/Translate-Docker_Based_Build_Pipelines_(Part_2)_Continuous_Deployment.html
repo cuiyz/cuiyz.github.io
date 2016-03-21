@@ -255,7 +255,7 @@ curl -i -silent -X PUT            \
 然而，实际开发中我们一般会发布到私有到repository中去。在Jenkins中创建一个“Free Style”项目，定义任务名为“push-go-auth-image“。
 完成以后，你将会被引导到配置页面，那里你可以配置把你的“go-auth”镜像提交到DockerHub的步骤。</p>
 <p>这和之前定义的“go-auth-integration-test”任务非常相似，首先设置为“parameterized build”，添加“GO_AUTH_VERSION”参数。</p>
-<p align="center"><img src="images/go_auth_parameter.png" style="width:auto;max-width:800px"></p>
+<p align="center"><img src="images/go_auth_parameter.png" style="width:auto;max-width:400px"></p>
 <p>为了能够真正提交镜像，我们选择“Add build step”然后选择“Execute shell“参数。在返回的文本框中，添加下边的命令行。
 命令行的意思分别是登陆docker hub和提交镜像。镜像被提交到了“usman/go-auth”库。</p>
 <p>像上篇文章中提到的，我们将使用git-flow分支模型来合并所有的分支到“develop”分支。
@@ -280,9 +280,140 @@ docker push usman/go-auth:${GO_AUTH_VERSION}
 <p>最后，我们需要在镜像成功上传后触发部署任务。同样的，我们也可以像其它任务一样增加一个post-build的动作。</p>
 
 <h2>部署到集成环境</h2>
+<p>这一步，我们将使用Rancher Compose命令行来：停止环境、从DockerHub获取最新镜像、重启环境。
+一个简单的提醒：Updates接口正在处于开发调整阶段，随时会发生变化。
+后续，一定会有新的功能和改进增加到接口中，请随时关注
+<a href="http://docs.rancher.com/rancher/rancher-compose/upgrading/">文档更新</a>。
+在使用Jenkins实现自动任务之前，让我们先手动执行一下这些步骤。</p>
+<p>首先，停止所有的服务(auth service, load balancer and mysql)，获取最新版本镜像，启动所有服务。
+然而，这个可能比我们设想的只在长测环境中更新应用要差一些。为了更新应用，我们首先停止auth-service，这块可以通过使用Rancher Compose命令行实现。</p>
+<blockquote style="background-color:#e5e5e5"><pre><code>
+# If you not have already done so
+# git clone https://github.com/usmanismail/go-messenger.git
+# cd go-messenger/deploy
 
+rancher-compose --project-name messenger-int      \
+    --url http://YOUR_RANCHER_SERVER:PORT/v1/     \
+    --access-key <API_KEY>                        \
+    --secret-key <SECRET_KEY>                     \
+    --verbose stop auth-service
+    
+</code></pre></blockquote>
+<p>这将停掉运行auth-service的所有容器，你可以通过Rancher UI检查一下，看服务状态是否为Inactive。
+接下来，我们告诉rancher我们需要下载的镜像版本。注意，我们这里指定的版本将在docker compose文件中被替换( image: usman/go-auth:${auth_version} )。</p>
+<blockquote style="background-color:#e5e5e5"><pre><code>
+auth_version=${version} rancher-compose --project-name messenger-int \
+ --url http://YOUR_RANCHER_SERVER:PORT/v1/   \
+ --access-key <API_KEY>                      \
+ --secret-key <SECRET_KEY>                   \
+ --verbose pull auth-service
+    
+</code></pre></blockquote>
+<p>现在，我们已经下载来所有我们想要的镜像，接下来就剩下启动应用了。</p>
+<blockquote style="background-color:#e5e5e5"><pre><code>
+auth_version=${version} rancher-compose --project-name messenger-int \
+ --url http://YOUR_RANCHER_SERVER:PORT/v1/   \
+ --access-key <API_KEY>                      \
+ --secret-key <SECRET_KEY>                   \
+ --verbose start
+    
+</code></pre></blockquote>
+<p>Rancher 0.44.0以后的版本，上述3步命令也可以用force-upgrade参数合并成一步。</p>
+<blockquote style="background-color:#e5e5e5"><pre><code>
+auth_version=${version} rancher-compose  --project-name messenger-int \
+ --url http://YOUR_RANCHER_SERVER:PORT/v1/   \
+ --access-key <API_KEY>                      \
+ --secret-key <SECRET_KEY>                   \
+ --verbose up -d --force-upgrade --pull --confirm-upgrade auth-service
+    
+</code></pre></blockquote>
+<p>现在我们知道在Jenkins里都要做什么了。首先创建一个freestyle的项目，命名为deploy-integration。
+创建一个带参数的构建，用GO_AUTH_VERSION作为参数。接下来，从上游的build-go-auth任务拷贝所有的产品。</p>
+<p align="center"><img src="images/copy_artifacts_deploy_job.png" style="width:auto;max-width:400px"></p>
+<p>最后，我们为之前定义的Rancher Compose启动命令增加一个Execute Shell的步骤。
+注意，你还是将首先需要在Jenkins里设置好rancher-compose并使其在系统路径下可用。这里我们每次重新安装compose是为了简化操作。
+你需要指定“Rancher API key”，“Rancher API Secret”和“Rancher server URL”做完你运行脚本的一部分。
+像之前提到的一样，你也可用使用Masked Passwords来保护你的密码。整个脚本看起来是下边这样的。
+注意，当你有多个Rancher Compose节点时，负载均服务可能需要在不同的主机上启动，所以你的Route53配置也可能需要更新。</p>
+<blockquote style="background-color:#e5e5e5"><pre><code>
+cd deploy
+wget https://github.com/rancher/rancher-compose/releases/download/v0.5.1/rancher-compose-linux-amd64-v0.5.1.tar.gz -O - | tar -zx
+mv rancher-compose-v0.5.1/rancher-compose .
+rm -rf rancher-compose-v0.5.1
 
+./rancher-compose --project-name messenger-int \
+ --url http://YOUR_RANCHER_SERVER:PORT/v1/   \
+ --access-key <API_KEY>                      \
+ --secret-key <SECRET_KEY>                   \
+ -- verbose up -d --force-upgrade --pull --confirm-upgrade auth-service
+    
+</code></pre></blockquote>
+<p>增加了2个Jenkins任务以后，看起来是下边这个样子的。每次代码提交，现在都会自动触发编译和自动测试。
+然后进行打包，通过集成测试后，最终发布，以供人工测试。下述的5个步骤，为从开发到测试到部署提供了很好的参考。
+持续发布环境，不仅保证了自动化测试的自动运行，也为手工测试提供了快速的响应基础。
+同时，这也为生成环境的持续发布、运营工具的测试，形成了一个良好的模型基础。</p>
+<p align="center"><img src="images/complete_pipeline_jenkins1.png" style="width:auto;max-width:800px"></p>
 
+<h2>发布并部署新版本</h2>
+<p>当我们把代码部署到了一个持久的可测试的环境，我们就可用让QA工程师team对这些改动进行人工验证了。
+一旦验证通过，我们就可用发布和生成环境的部署了。发布的步骤和使用git进行分支很像，这个可用参考之前的文章。
+具体参考下边的命令。将会创建一个发布分支，启动清扫动作，比如更新版本号，做发布前最后的代码修正，等等。</p>
+<blockquote style="background-color:#e5e5e5"><pre><code>
+git flow release start v1
+Switched to a new branch 'release/v1'
+Summary of actions:
+- A new branch 'release/v1' was created, based on 'develop'
+- You are now on branch 'release/v1'
+Follow-up actions:
+- Bump the version number now!
+- Start committing last-minute fixes in preparing your release
+- When done, run:
+git flow release finish 'v1'
+    
+</code></pre></blockquote>
+<p>完成以后，我们运行release finish命令将分支合并到主分支。这样，主分支就会包含所有的发布代码。
+另外，每一次发布都会打标签，所以会生成一个标签的历史结构。
+因为我们不希望合并入更多的变更，让我们赶快结束发布，命令如下。</p>
+<blockquote style="background-color:#e5e5e5"><pre><code>
+Switched to branch 'master'
+Merge made by the 'recursive' strategy.
+ README.md | 1 +
+ 1 file changed, 1 insertion(+)
+Deleted branch release/v1 (was 7ae8ca4).
+Summary of actions:
+- Latest objects have been fetched from 'origin'
+- Release branch has been merged into 'master'
+- The release was tagged 'v1'
+- Release branch has been back-merged into 'develop'
+- Release branch 'release/v1' has been deleted
+    
+</code></pre></blockquote>
+<p>最后一步，将代码推送到远端库。</p>
+<blockquote style="background-color:#e5e5e5"><pre><code>
+git push origin master
+git push --tags //pushes the v1 tag to remote repository
+    
+</code></pre></blockquote>
+<p>如果您使用的是Github来托管代码，你会看到一个新的发布版本。</p>
+<p align="center"><img src="images/github_release_v1.png" style="width:auto;max-width:300px"></p>
+<p>使用同样的版本推送到DockerHub也是一个不错的主意。想要这样做的话，让我们先触发我们的第一个CD任务。
+如果你还有印象，之前的文章中提到来如何配置Git Parameter插件来获取所有的标签。这个在开发中用到比较多，当我们手动时，我们直接选择标签就好了。
+比如下边的选项，有两个发布版本。我们选择其中一个，来完成接下来的集成和发布。</p>
+<p align="center"><img src="images/trigger_release.png" style="width:auto;max-width:300px"></p>
+<p>这会经历下述步骤，部署我们的1.1版本应用到长测集成环境中，只需简单的鼠标点点：</p>
+<p>1.从git库中选择发布版。</p>
+<p>2.构建应用并运行单元测试。</p>
+<p>3.创建新镜像并打标签v1.1(如：usman/go-auth:v1.1)。</p>
+<p>4.运行集成测试。</p>
+<p>5.推送镜像(usman/go-auth:v1.1)到DockerHub。</p>
+<p>6.部署这个版本到我们对集成环境。</p>
+
+<p>今天的文章中，我们讲述来如何完成持续发布，将一个简单的应用部署到集成环境中去。
+同时，我们也探讨了DNS和HTTPS环境的支持，从而实现一个更加稳定、安全的可用环境。
+在下一篇文章中，我们将继续探讨生成环境的持续部署。在发布变更的同时，保证环境的可用性，确保理想上的0宕机时间。
+此外，使用负载均衡、DNS等方式实现降低成本、失败恢复、实现高可用等，也是我们非常关注的。</p>
+
+<p>原文链接：<a href="http://rancher.com/continuous-deployment/">Docker-Based Build Pipelines (Part 2) – Continuous Deployment</a></p>
 
 
 </body>

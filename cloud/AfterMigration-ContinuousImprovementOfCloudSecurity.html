@@ -37,9 +37,9 @@
 <p>1.IAM (Identity and Access Management) 是一种 Web 服务，可帮助您安全地控制用户对云端资源的访问权限。通过 IAM 可以控制哪些人可以使用您的云端资源（身份验证）以及他们可以使用的资源和采用的方式（授权）。</p>
 <p>2.MFA (Multi-Factor Authentication) 是一种非常简便的最佳实践方法，它能够在用户名称和密码之外再额外增加一层保护。启用 MFA 后，用户登录云服务网站时，系统将要求他们输入用户名和密码（第一安全要素 – 用户已知），以及来自其 MFA 设备的身份验证代码（第二安全要素 – 用户已有）。这些多重要素结合起来将为您的云服务账户设置和资源提供更高的安全保护。</p>
 <p align="center"><img src="images/MFA.png" style="width:auto;max-width:700px"></p>
-<p>3.如果想了解更多，关于IAM，您可以参考AWS的官方文档：<a href="https://aws.amazon.com/cn/documentation/iam/
-">AWS Identity and Access Management</a>；关于MFA，可以参考AWS的官方文档：<a href="http://aws.amazon.com/cn/iam/details/mfa/
-">Multi-Factor Authentication</a></p>
+<p>3.如果想了解更多，关于IAM，您可以参考AWS的官方文档<a href="https://aws.amazon.com/cn/documentation/iam/
+">AWS Identity and Access Management</a>；关于MFA，可以参考AWS的官方文档<a href="http://aws.amazon.com/cn/iam/details/mfa/
+">Multi-Factor Authentication</a>。</p>
 
 <h2>云端网络设计和安全隔离</h2>
 <p>1.使用云的最大好处之一，就是可以根据用户自己的需要，完全自定义二层网络，也就是我们常说的SDN。</p>
@@ -47,52 +47,52 @@
 <p>3.配合防火墙、安全组等安全服务，则可以更加容易的实现内外网隔离和访问控制。</p>
 <p align="center"><img src="images/VPC.png" style="width:auto;max-width:400px"></p>
 
-<h2>善用IaaS基本安全服务</h2>
-<p>典型的安全组使用场景如下图所示。</p>
+<h2>善用IaaS基本安全服务之－Security Group</h2>
+<p>1.典型的安全组使用场景如下图所示。</p>
 <p align="center"><img src="images/SecurityGroup.jpg" style="width:auto;max-width:500px"></p>
-<p>用户可以根据需要设置按安全组、源目的IP、源目的端口、内外网访问等条件进行访问控制。</p>
+<p>2.用户可以根据需要设置按安全组、源目的IP、源目的端口、内外网访问等条件进行访问控制。</p>
 
-<h2>善用IaaS基本安全服务</h2>
-<p>以常见的OpenStack体系为例，防火墙使用场景如下图所示。</p>
+<h2>善用IaaS基本安全服务之－Firewall As A Service</h2>
+<p>1.以常见的OpenStack体系为例，防火墙使用场景如下图所示。</p>
 <p align="center"><img src="images/FWAAS.jpg" style="width:auto;max-width:500px"></p>
-<p>用户开启防火墙服务以后，防火墙就成为了服务的必经入口，用户可以按照源目的IP、源目的端口等条件，像使用标准物理防火墙一样进行访问控制。</p>
+<p>2.用户开启防火墙服务以后，防火墙就成为了服务的必经入口，用户可以按照源目的IP、源目的端口等条件，像使用标准物理防火墙一样进行访问控制。</p>
 
-<h2>借力IaaS高级安全服务</h2>
-<p>一般的云服务提供商，都会在网络出口处架设DDoS防护设备。</p>
-<p>用户可以通过购买DDoS防护服务，有效的保护自身应用系统或服务。</p>
-<p>DDoS设备根据DDoS策略中的学习规则发现流量，生成检测规则。而后，根据检测规则进行异常流量检测，并在检测到异常流量时生成过滤规则，阻止异常流量通过设备。</p>
+<h2>借力IaaS高级安全服务之－DDoS防护</h2>
+<p>1.一般的云服务提供商，都会在网络出口处架设DDoS防护设备。</p>
+<p>2.用户可以通过购买DDoS防护服务，有效的保护自身应用系统或服务。</p>
+<p>3.DDoS设备根据DDoS策略中的学习规则发现流量，生成检测规则。而后，根据检测规则进行异常流量检测，并在检测到异常流量时生成过滤规则，阻止异常流量通过设备。</p>
 <p align="center"><img src="images/DDoS.jpg" style="width:auto;max-width:600px"></p>
-<p>想了解更多关于DDoS的信息，您可以参考H3C的<a href="http://www.h3c.com.cn/Service/Document_Center/IP_Security/SecBlade/H3C_SecBlade_IPS/Configure/User_Manual/IPS_Web_E1204-5PW102/07-DDoS/">关于DDoS</a>的文档介绍</p>
+<p>4.想了解更多关于DDoS的信息，您可以参考H3C<a href="http://www.h3c.com.cn/Service/Document_Center/IP_Security/SecBlade/H3C_SecBlade_IPS/Configure/User_Manual/IPS_Web_E1204-5PW102/07-DDoS/">关于DDoS</a>的文档介绍</p>
 
-<h2>借力IaaS高级安全服务</h2>
-<p>WAF是Web Application Firewall的缩写，中文可以翻译成：网站应用防护系统。通过执行一系列针对HTTP/HTTPS的安全策略来专门为Web应用提供保护。</p>
-<p>参考下侧示意图，和DDoS防护很像。</p>
+<h2>借力IaaS高级安全服务之－WAF防护</h2>
+<p>1.WAF是Web Application Firewall的缩写，中文可以翻译成：网站应用防护系统。通过执行一系列针对HTTP/HTTPS的安全策略来专门为Web应用提供保护。</p>
+<p>2.WAF的工作原理可参考下方示意图，和DDoS防护很像。</p>
 <p align="center"><img src="images/WAF.png" style="width:auto;max-width:500px"></p>
-<p>软件定义WAF与分布式WAF的思考。</p>
+<p>3.未来，针对软件定义WAF与分布式WAF技术，我想我们会做出更多的思考和探索。</p>
 
 <h2>善用审计日志</h2>
-<p>审计日志，就不用多说了，它记录了用户账户下全部账号的所有详细操作记录。</p>
-<p>当需要追溯问题或查找详细操作信息时，它就非常重要了。</p>
+<p>1.审计日志，就不用多说了，它记录了用户账户下全部账号的所有详细操作记录。</p>
+<p>2.当需要追溯问题或查找详细操作信息时，它就非常重要了。</p>
 <p align="center"><img src="images/AuditLog.jpg" style="width:auto;max-width:800px" border="1"></p>
 
 <h2>严格密钥管理</h2>
-密钥匙用户访问资源的钥匙。
-对于不同的资源和用户，建议分配不同的密钥，分开管理。
-对密钥做到严格的管理和控制，能够有效的防止很多内部安全问题的发生。
+<p>1.密钥匙用户访问资源的钥匙。</p>
+<p>2.对于不同的资源和用户，建议分配不同的密钥，分开管理。</p>
+<p>3.对密钥做到严格的管理和控制，能够有效的防止很多内部安全问题的发生。</p>
 <p align="center"><img src="images/KeyPair.png" style="width:auto;max-width:800px" border="1"></p>
 
 <h2>其它安全手段和措施</h2>
 <p align="center"><img src="images/gear.jpg" style="width:auto;max-width:700px"></p>
-<p>关闭一切不必要端口。</p>
-<p>开通VPN，只通过VPN访问方式管理资源。</p>
-<p>Web应用开启Https。</p>
-<p>用户与权限的严格管理，通过用户组来映射角色和权限。</p>
+<p>1.关闭一切不必要端口。</p>
+<p>2.开通VPN，只通过VPN访问方式管理资源。</p>
+<p>3.Web应用开启Https。</p>
+<p>4.用户与权限的严格管理，通过用户组来映射角色和权限。</p>
 <p>… …</p>
 
 <hr color="gray" title="华丽的分割线" size="1"/>
 <h2 align="center">关于作者</h2>
 <p align="center"><img src="images/cuiyz.jpg" style="width:auto;max-width:300px"></p>
-<p>崔远智，现任东网科技有限公司云计算云计算研发部部长。主要从事云计算基础服务和应用领域的研究、开发工作，研究方向主要包括主机虚拟化技术、分布式存储技术、软件定义网络技术、容器技术、等。曾从事多年国内解决方案软件和欧美国际软件外包业务并赴美工作。发表过“基于实时控制的多路温度监测系统[J]”的学术论文，等。</p>
+<p>崔远智，现任东网科技有限公司云计算负责人。主要从事云计算基础服务和应用领域的研究、开发工作，研究方向主要包括主机虚拟化技术、分布式存储技术、软件定义网络技术、容器技术、等。曾从事多年国内解决方案软件和欧美国际软件外包业务并赴美工作。发表过“基于实时控制的多路温度监测系统[J]”的学术论文，等。</p>
 <hr color="gray" title="华丽的分割线" size="1"/>
 
 <p style="text-indent:2em"><a href="http://cuiyz.github.io/"><<返回主页</a></p>
